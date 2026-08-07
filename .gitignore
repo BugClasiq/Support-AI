@@ -1,0 +1,99 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+
+# Translations
+*.mo
+*.pot
+
+# Flask / Django stuff
+instance/
+.webassets-cache
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Env files
+*.env
+
+# PyCharm
+.idea/
+
+# VS Code
+.vscode/
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+
+# Build artifacts
+*.log
+*.pot
+*.pyc
+*.pyo
+*.pyd
+*.swp
+*.swo
+*.tmp
+*.temp
+*.bak
+*.old
+# Ignore temporary files from editors
+*~
+
+# Ignore backup files
+*.orig
+
+# Ignore Python wheel files
+*.whl
+
+# Ignore compiled C extensions
+*.so
+*.dylib
+*.dll
+
+# Ignore ffmpeg downloads and other binary caches
+*.exe
+*.dll
+*.lib
+
+# Ignore model / data caches if present
+*.cache
+
+# Django migrations folders are part of repo, so do not ignore migrations
