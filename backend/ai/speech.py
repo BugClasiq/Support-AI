@@ -88,18 +88,102 @@ class Speech:
 
 
     @staticmethod
+    def convert_to_16k_wav(audio_path):
+        """Converts any input audio file (WAV, WEBM, MP3, etc.) to 16kHz mono 16-bit WAV for whisper."""
+        if not audio_path or not os.path.exists(audio_path):
+            return audio_path
+
+        # Quick check if it is already a 16kHz mono PCM 16-bit WAV file
+        try:
+            with wave.open(audio_path, 'rb') as wf:
+                if wf.getframerate() == 16000 and wf.getnchannels() == 1 and wf.getsampwidth() == 2:
+                    return audio_path
+        except Exception:
+            pass
+
+        target_path = tempfile.mktemp(suffix="_16k.wav")
+
+        # 1. Try PyAV (handles webm, ogg, wav, mp3 natively without external binaries)
+        try:
+            import av
+            container = av.open(audio_path)
+            stream = container.streams.audio[0]
+            resampler = av.AudioResampler(format='s16', layout='mono', rate=16000)
+
+            raw_frames = []
+            for frame in container.decode(stream):
+                resampled_frames = resampler.resample(frame)
+                for rf in resampled_frames:
+                    raw_frames.append(rf.to_ndarray().tobytes())
+
+            flushed = resampler.resample(None)
+            if flushed:
+                for rf in flushed:
+                    raw_frames.append(rf.to_ndarray().tobytes())
+
+            audio_bytes = b"".join(raw_frames)
+            with wave.open(target_path, 'wb') as wf:
+                wf.setnchannels(1)
+                wf.setsampwidth(2)
+                wf.setframerate(16000)
+                wf.writeframes(audio_bytes)
+            container.close()
+            return target_path
+        except Exception as e:
+            print("PyAV conversion failed, trying pydub:", e)
+
+        # 2. Try pydub
+        try:
+            from pydub import AudioSegment
+            sound = AudioSegment.from_file(audio_path)
+            sound = sound.set_frame_rate(16000).set_channels(1).set_sample_width(2)
+            sound.export(target_path, format="wav")
+            return target_path
+        except Exception as e:
+            print("Pydub conversion failed:", e)
+
+        # 3. Try scipy fallback for WAV files
+        try:
+            import numpy as np
+            from scipy.io import wavfile
+            from scipy.signal import resample
+
+            rate, data = wavfile.read(audio_path)
+            if data.ndim > 1:
+                data = data.mean(axis=1)
+            if rate != 16000:
+                num_samples = int(len(data) * 16000 / rate)
+                data = resample(data, num_samples)
+
+            data = np.int16(data)
+            wavfile.write(target_path, 16000, data)
+            return target_path
+        except Exception as e:
+            print("Scipy conversion failed:", e)
+
+        return audio_path
+
+    @staticmethod
     def stt(audio_path=None):
         if audio_path is None:
             temp_dir = tempfile.gettempdir()
             audio_path = os.path.join(temp_dir, "support_ai_voice.wav")
             Speech.record_audio(audio_path, silence_threshold=500, silence_duration=2.0, sample_rate=16000)
 
+        converted_path = Speech.convert_to_16k_wav(audio_path)
 
         try:
             model = Speech.get_model()
             with _suppress_stderr():
-                segments = model.transcribe(audio_path)
+                segments = model.transcribe(converted_path)
             text = " ".join(seg.text.strip() for seg in segments).strip()
+
+            if converted_path != audio_path and os.path.exists(converted_path):
+                try:
+                    os.remove(converted_path)
+                except Exception:
+                    pass
+
             return text
         except Exception as e:
             import traceback
@@ -109,6 +193,8 @@ class Speech:
 
 
 
+
+    @staticmethod
     def speak_text(text):
         if not text:
             return
@@ -120,6 +206,28 @@ class Speech:
         engine = pyttsx3.init()
         engine.say(text)
         engine.runAndWait()
+
+    @staticmethod
+    def speak_to_file(text, output_path=None):
+        if not text:
+            return None
+
+        if pyttsx3 is None:
+            return None
+
+        if output_path is None:
+            temp_dir = tempfile.gettempdir()
+            output_path = os.path.join(temp_dir, "support_ai_response.wav")
+
+        try:
+            engine = pyttsx3.init()
+            engine.save_to_file(text, output_path)
+            engine.runAndWait()
+            return output_path
+        except Exception as e:
+            print("TTS save_to_file failed:", e)
+            return None
+
 
 
 # def get_ai_reply(text):

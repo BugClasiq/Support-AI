@@ -3,7 +3,11 @@ from groq import Groq
 import os
 from dotenv import load_dotenv
 
-load_dotenv()  # Load environment variables from .env file
+basedir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+load_dotenv(os.path.join(basedir, ".env"))
+load_dotenv()
+
+
 
 class GroqClient:
     def __init__(self, api_key: str=None, model: str = "llama-3.1-8b-instant"):
@@ -16,7 +20,7 @@ class GroqClient:
         client = Groq(api_key=self.api_key)
         
         completion = client.chat.completions.create(
-                model="llama-3.1-8b-instant",
+                model="groq/compound-mini",
                 messages=[
                     {
                         "role": "system",
